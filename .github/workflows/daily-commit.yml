@@ -1,0 +1,46 @@
+name: Daily Automated Commit - DevSync
+
+on:
+  schedule:
+    # Run daily at 14:30 UTC (8:00 PM IST)
+    # Must use specific hours/minutes, not wildcards
+    - cron: '30 14 * * *'
+  workflow_dispatch:  # Allow manual triggering for testing
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Configure Git with email 23f2005381@ds.study.iitm.ac.in
+        run: |
+          git config --local user.email "23f2005381@ds.study.iitm.ac.in"
+          git config --local user.name "DevSync Automation Bot"
+      
+      - name: Generate daily update file
+        run: |
+          # Create or update daily activity log
+          DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          echo "Automated daily update - $DATE" >> daily-activity.log
+          
+          # Create a status file with current timestamp
+          mkdir -p .devsync
+          echo "Last Updated: $DATE" > .devsync/status.txt
+          echo "Workflow Run: ${{ github.run_number }}" >> .devsync/status.txt
+      
+      - name: Commit and push changes
+        run: |
+          DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          git add daily-activity.log .devsync/
+          git commit -m "Automated daily commit - $DATE [DevSync]" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
